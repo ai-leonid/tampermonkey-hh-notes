@@ -359,7 +359,8 @@
     const storage = loadStorage();
     const save = saveStorage;
 
-    const cards = document.querySelectorAll('[data-qa="resume resume-highlighted"][data-qa-id]');
+    const selector = '[data-qa="resume"][data-qa-id], [data-qa="resume resume-highlighted"][data-qa-id]';
+    const cards = document.querySelectorAll(selector);
     cards.forEach((card) => initForCard(card, storage, save));
 
     // На случай динамической подгрузки резюме
@@ -369,12 +370,12 @@
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof HTMLElement)) return;
 
-          if (node.matches && node.matches('[data-qa="resume resume-highlighted"][data-qa-id]')) {
+          if (node.matches && node.matches(selector)) {
             initForCard(node, storage, save);
             foundNew = true;
           } else {
             const innerCards = node.querySelectorAll
-              ? node.querySelectorAll('[data-qa="resume resume-highlighted"][data-qa-id]')
+              ? node.querySelectorAll(selector)
               : [];
             innerCards.forEach((card) => {
               initForCard(card, storage, save);
