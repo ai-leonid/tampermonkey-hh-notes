@@ -41,63 +41,26 @@
     const panel = document.createElement('div');
     panel.setAttribute('data-hh-notes-panel', 'true');
 
-    // Стили максимально нейтральные, чтобы не ломать дизайн HH
+    // Стили максимально нейтральные
     panel.style.margin = '12px 16px 16px 16px';
     panel.style.padding = '8px 10px';
     panel.style.borderRadius = '8px';
     panel.style.background = 'rgba(0, 0, 0, 0.02)';
-    panel.style.border = '1px solid rgba(0, 0, 0, 0.05)';
     panel.style.display = 'flex';
     panel.style.flexDirection = 'column';
-    panel.style.gap = '6px';
+    panel.style.gap = '2px';
     panel.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     panel.style.fontSize = '12px';
 
-    const header = document.createElement('div');
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.justifyContent = 'space-between';
-    header.style.gap = '8px';
-
-    const title = document.createElement('span');
-    title.textContent = 'Моя пометка';
-    title.style.fontWeight = '500';
-
-    const colorWrapper = document.createElement('div');
-    colorWrapper.style.display = 'flex';
-    colorWrapper.style.alignItems = 'center';
-    colorWrapper.style.gap = '4px';
-
-    const colorLabel = document.createElement('span');
-    colorLabel.textContent = 'Цвет:';
-
-    const colorInput = document.createElement('input');
-    colorInput.type = 'color';
-    colorInput.style.width = '24px';
-    colorInput.style.height = '24px';
-    colorInput.style.padding = '0';
-    colorInput.style.border = 'none';
-    colorInput.style.background = 'transparent';
-    colorInput.style.cursor = 'pointer';
-
-    const defaultColor = '#ffd966'; // мягкий желтый по умолчанию
-
-    colorInput.value = state && state.color ? state.color : defaultColor;
-
-    colorWrapper.appendChild(colorLabel);
-    colorWrapper.appendChild(colorInput);
-
-    header.appendChild(title);
-    header.appendChild(colorWrapper);
-
+    // Сначала создаем textarea, так как она нужна в updateColor
     const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Ваш комментарий к этому резюме';
     textarea.rows = 2;
-    textarea.style.resize = 'vertical';
+    textarea.style.resize = 'none';
     textarea.style.minHeight = '40px';
     textarea.style.padding = '6px 8px';
     textarea.style.borderRadius = '6px';
-    textarea.style.border = '1px solid rgba(0, 0, 0, 0.12)';
+    textarea.style.border = 'none';
+    textarea.style.outline = 'none';
     textarea.style.fontSize = '12px';
     textarea.style.lineHeight = '1.4';
     textarea.style.width = '100%';
@@ -107,20 +70,156 @@
       textarea.value = state.comment;
     }
 
-    // Обработчики изменений
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.style.gap = '8px';
+
+    const colorWrapper = document.createElement('div');
+    colorWrapper.style.display = 'flex';
+    colorWrapper.style.alignItems = 'center';
+    colorWrapper.style.gap = '8px';
+
+    // Преднастроенные цвета
+    const PRESET_COLORS = [
+      '#ffd966', // Yellow
+      '#8dc6ff', // Blue
+      '#84e1bc', // Green
+      '#ff2b00', // Red
+      '#e1bfff', // Purple
+    ];
+
+    let currentColor = state && state.color ? state.color : 'transparent';
+
+    // Функция обновления цвета (определена до использования)
+    function updateColor(newColor) {
+      currentColor = newColor;
+
+      // Обновляем UI кнопок
+      const palette = colorWrapper.querySelector('[data-hh-palette]');
+      if (palette) {
+        const customLabel = palette.lastElementChild;
+        Array.from(palette.children).forEach(child => {
+          child.style.borderColor = 'transparent';
+          child.style.transform = 'scale(1)';
+
+          if (child === customLabel) {
+             child.style.border = '1px solid rgba(0,0,0,0.2)';
+             if (newColor !== 'transparent' && !PRESET_COLORS.includes(newColor)) {
+                child.style.borderColor = '#333';
+                child.style.transform = 'scale(1.1)';
+             }
+          } else if (child.getAttribute('data-color') === newColor) {
+             child.style.borderColor = '#333';
+             child.style.transform = 'scale(1.1)';
+          }
+        });
+      }
+
+      onChange({
+        id: resumeId,
+        comment: textarea.value,
+        color: newColor,
+      });
+    }
+
+    // Функция для создания кнопки цвета
+    const createColorBtn = (color) => {
+      const btn = document.createElement('div');
+      btn.setAttribute('data-color', color);
+      btn.style.width = '18px';
+      btn.style.height = '18px';
+      btn.style.borderRadius = '50%';
+      btn.style.cursor = 'pointer';
+      btn.style.border = '2px solid transparent';
+
+      if (color === 'transparent') {
+        btn.style.background = `
+          linear-gradient(to top left,
+            rgba(0,0,0,0) 0%,
+            rgba(0,0,0,0) calc(50% - 1px),
+            rgba(0,0,0,0.4) 50%,
+            rgba(0,0,0,0) calc(50% + 1px),
+            rgba(0,0,0,0) 100%),
+          transparent
+        `;
+        btn.style.border = '1px solid rgba(0,0,0,1)';
+        btn.title = 'Сбросить цвет';
+      } else {
+        btn.style.backgroundColor = color;
+      }
+
+      // Выделение активного
+      if (color === currentColor) {
+         btn.style.borderColor = '#333';
+         btn.style.transform = 'scale(1.1)';
+      }
+
+      btn.addEventListener('click', () => {
+        updateColor(color);
+      });
+
+      return btn;
+    };
+
+    // Контейнер для палитры
+    const palette = document.createElement('div');
+    palette.setAttribute('data-hh-palette', 'true');
+    palette.style.display = 'flex';
+    palette.style.gap = '6px';
+
+    // Кнопка сброса (прозрачный)
+    palette.appendChild(createColorBtn('transparent'));
+
+    // Пресеты
+    PRESET_COLORS.forEach(c => {
+      palette.appendChild(createColorBtn(c));
+    });
+
+    // Кастомный выбор
+    const customColorLabel = document.createElement('label');
+    customColorLabel.title = 'Выбрать свой цвет';
+    customColorLabel.style.cursor = 'pointer';
+    customColorLabel.style.display = 'flex';
+    customColorLabel.style.alignItems = 'center';
+    customColorLabel.style.justifyContent = 'center';
+    customColorLabel.style.width = '18px';
+    customColorLabel.style.height = '18px';
+    customColorLabel.style.borderRadius = '50%';
+    customColorLabel.style.border = '1px solid rgba(0,0,0,0.2)';
+    customColorLabel.style.background = 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)';
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.style.visibility = 'hidden';
+    colorInput.style.width = '0';
+    colorInput.style.height = '0';
+    colorInput.style.position = 'absolute';
+
+    // Если текущий цвет не из пресетов и не прозрачный
+    if (currentColor !== 'transparent' && !PRESET_COLORS.includes(currentColor)) {
+      colorInput.value = currentColor;
+      customColorLabel.style.borderColor = '#333';
+      customColorLabel.style.transform = 'scale(1.1)';
+    }
+
+    colorInput.addEventListener('input', (e) => {
+       updateColor(e.target.value);
+    });
+
+    customColorLabel.appendChild(colorInput);
+    palette.appendChild(customColorLabel);
+
+    colorWrapper.appendChild(palette);
+    header.appendChild(colorWrapper);
+
+    // Обработчик изменения текста
     textarea.addEventListener('input', () => {
       onChange({
         id: resumeId,
         comment: textarea.value,
-        color: colorInput.value,
-      });
-    });
-
-    colorInput.addEventListener('input', () => {
-      onChange({
-        id: resumeId,
-        comment: textarea.value,
-        color: colorInput.value,
+        color: currentColor,
       });
     });
 
@@ -128,7 +227,6 @@
     panel.appendChild(textarea);
 
     // Вставляем в конец карточки, но до внешней рамки
-    // Обычно удобнее всего добавить перед последним элементом-границей, если он есть
     const borderEl = card.querySelector('.magritte-border-element___x7sZL_8-2-1:last-of-type');
     if (borderEl && borderEl.parentElement === card) {
       card.insertBefore(panel, borderEl);
@@ -163,7 +261,7 @@
       card.appendChild(marker);
     }
 
-    marker.style.backgroundColor = color || '#ffd966';
+    marker.style.backgroundColor = color && color !== 'transparent' ? color : 'transparent';
   }
 
   function initForCard(card, storage, save) {
@@ -178,14 +276,14 @@
     createPanel(resumeId, card, state, (updated) => {
       storage[updated.id] = {
         comment: updated.comment || '',
-        color: updated.color || '#ffd966',
+        color: updated.color || 'transparent',
       };
       save(storage);
       applyColorToCard(card, storage[updated.id].color);
     });
 
     // Применяем цвет при инициализации
-    const colorToApply = state.color || '#ffd966';
+    const colorToApply = state.color || 'transparent';
     applyColorToCard(card, colorToApply);
   }
 
