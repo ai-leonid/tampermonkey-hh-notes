@@ -14,6 +14,138 @@
 
   const STORAGE_KEY = 'hh-resume-notes-and-colors';
 
+  // --- STYLES CONFIGURATION ---
+  const CSS_CLASSES = {
+    panel: 'hh-resume-note-panel',
+    textarea: 'hh-resume-note-textarea',
+    header: 'hh-resume-note-header',
+    colorWrapper: 'hh-resume-note-color-wrapper',
+    palette: 'hh-resume-note-palette',
+    colorBtn: 'hh-resume-note-color-btn',
+    colorBtnTransparent: 'hh-resume-note-color-btn--transparent',
+    colorBtnActive: 'is-active',
+    customLabel: 'hh-resume-note-custom-label',
+    colorInput: 'hh-resume-note-color-input',
+    marker: 'hh-resume-note-marker',
+  };
+
+  const STYLES = `
+    .${CSS_CLASSES.panel} {
+      margin: 12px 16px 16px 16px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    
+    .${CSS_CLASSES.textarea} {
+      resize: none;
+      min-height: 40px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      font-size: 12px;
+      line-height: 1.4;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      background: transparent;
+    }
+    
+    .${CSS_CLASSES.header} {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    
+    .${CSS_CLASSES.colorWrapper} {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .${CSS_CLASSES.palette} {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .${CSS_CLASSES.colorBtn} {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s, border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    .${CSS_CLASSES.colorBtnTransparent} {
+      background: linear-gradient(to top left,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0) calc(50% - 1px),
+        rgba(0,0,0,0.4) 50%,
+        rgba(0,0,0,0) calc(50% + 1px),
+        rgba(0,0,0,0) 100%),
+        transparent;
+      border: 1px solid rgba(0,0,0,1);
+    }
+
+    .${CSS_CLASSES.colorBtn}.${CSS_CLASSES.colorBtnActive},
+    .${CSS_CLASSES.customLabel}.${CSS_CLASSES.colorBtnActive} {
+      border-color: #333;
+      transform: scale(1.1);
+    }
+    
+    .${CSS_CLASSES.customLabel} {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.2);
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+      transition: transform 0.2s, border-color 0.2s;
+      box-sizing: border-box;
+      position: relative;
+    }
+    
+    .${CSS_CLASSES.colorInput} {
+      visibility: hidden;
+      width: 0;
+      height: 0;
+      position: absolute;
+      opacity: 0;
+    }
+
+    .${CSS_CLASSES.marker} {
+      position: absolute;
+      left: -7px;
+      top: 6%;
+      bottom: 6%;
+      width: 8px;
+      border-radius: 24px 0 0 24px;
+      pointer-events: none;
+    }
+  `;
+
+  function injectStyles() {
+    const styleId = 'hh-resume-notes-styles';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = STYLES;
+    document.head.appendChild(style);
+  }
+
   function loadStorage() {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -35,52 +167,27 @@
   }
 
   function createPanel(resumeId, card, state, onChange) {
-    const existing = card.querySelector('[data-hh-notes-panel]');
+    const existing = card.querySelector(`[data-hh-notes-panel]`);
     if (existing) return existing;
 
     const panel = document.createElement('div');
     panel.setAttribute('data-hh-notes-panel', 'true');
-
-    // Стили максимально нейтральные
-    panel.style.margin = '12px 16px 16px 16px';
-    panel.style.padding = '8px 10px';
-    panel.style.borderRadius = '8px';
-    panel.style.background = 'rgba(0, 0, 0, 0.02)';
-    panel.style.display = 'flex';
-    panel.style.flexDirection = 'column';
-    panel.style.gap = '2px';
-    panel.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    panel.style.fontSize = '12px';
+    panel.classList.add(CSS_CLASSES.panel);
 
     // Сначала создаем textarea, так как она нужна в updateColor
     const textarea = document.createElement('textarea');
+    textarea.classList.add(CSS_CLASSES.textarea);
     textarea.rows = 2;
-    textarea.style.resize = 'none';
-    textarea.style.minHeight = '40px';
-    textarea.style.padding = '6px 8px';
-    textarea.style.borderRadius = '6px';
-    textarea.style.border = 'none';
-    textarea.style.outline = 'none';
-    textarea.style.fontSize = '12px';
-    textarea.style.lineHeight = '1.4';
-    textarea.style.width = '100%';
-    textarea.style.height = '100%';
-    textarea.style.boxSizing = 'border-box';
 
     if (state && typeof state.comment === 'string') {
       textarea.value = state.comment;
     }
 
     const header = document.createElement('div');
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.justifyContent = 'space-between';
-    header.style.gap = '8px';
+    header.classList.add(CSS_CLASSES.header);
 
     const colorWrapper = document.createElement('div');
-    colorWrapper.style.display = 'flex';
-    colorWrapper.style.alignItems = 'center';
-    colorWrapper.style.gap = '8px';
+    colorWrapper.classList.add(CSS_CLASSES.colorWrapper);
 
     // Преднастроенные цвета
     const PRESET_COLORS = [
@@ -98,22 +205,18 @@
       currentColor = newColor;
 
       // Обновляем UI кнопок
-      const palette = colorWrapper.querySelector('[data-hh-palette]');
+      const palette = colorWrapper.querySelector(`.${CSS_CLASSES.palette}`);
       if (palette) {
         const customLabel = palette.lastElementChild;
         Array.from(palette.children).forEach(child => {
-          child.style.borderColor = 'transparent';
-          child.style.transform = 'scale(1)';
+          child.classList.remove(CSS_CLASSES.colorBtnActive);
 
           if (child === customLabel) {
-             child.style.border = '1px solid rgba(0,0,0,0.2)';
              if (newColor !== 'transparent' && !PRESET_COLORS.includes(newColor)) {
-                child.style.borderColor = '#333';
-                child.style.transform = 'scale(1.1)';
+                child.classList.add(CSS_CLASSES.colorBtnActive);
              }
           } else if (child.getAttribute('data-color') === newColor) {
-             child.style.borderColor = '#333';
-             child.style.transform = 'scale(1.1)';
+             child.classList.add(CSS_CLASSES.colorBtnActive);
           }
         });
       }
@@ -129,23 +232,10 @@
     const createColorBtn = (color) => {
       const btn = document.createElement('div');
       btn.setAttribute('data-color', color);
-      btn.style.width = '18px';
-      btn.style.height = '18px';
-      btn.style.borderRadius = '50%';
-      btn.style.cursor = 'pointer';
-      btn.style.border = '2px solid transparent';
+      btn.classList.add(CSS_CLASSES.colorBtn);
 
       if (color === 'transparent') {
-        btn.style.background = `
-          linear-gradient(to top left,
-            rgba(0,0,0,0) 0%,
-            rgba(0,0,0,0) calc(50% - 1px),
-            rgba(0,0,0,0.4) 50%,
-            rgba(0,0,0,0) calc(50% + 1px),
-            rgba(0,0,0,0) 100%),
-          transparent
-        `;
-        btn.style.border = '1px solid rgba(0,0,0,1)';
+        btn.classList.add(CSS_CLASSES.colorBtnTransparent);
         btn.title = 'Сбросить цвет';
       } else {
         btn.style.backgroundColor = color;
@@ -153,8 +243,7 @@
 
       // Выделение активного
       if (color === currentColor) {
-         btn.style.borderColor = '#333';
-         btn.style.transform = 'scale(1.1)';
+         btn.classList.add(CSS_CLASSES.colorBtnActive);
       }
 
       btn.addEventListener('click', () => {
@@ -167,8 +256,7 @@
     // Контейнер для палитры
     const palette = document.createElement('div');
     palette.setAttribute('data-hh-palette', 'true');
-    palette.style.display = 'flex';
-    palette.style.gap = '6px';
+    palette.classList.add(CSS_CLASSES.palette);
 
     // Кнопка сброса (прозрачный)
     palette.appendChild(createColorBtn('transparent'));
@@ -181,28 +269,16 @@
     // Кастомный выбор
     const customColorLabel = document.createElement('label');
     customColorLabel.title = 'Выбрать свой цвет';
-    customColorLabel.style.cursor = 'pointer';
-    customColorLabel.style.display = 'flex';
-    customColorLabel.style.alignItems = 'center';
-    customColorLabel.style.justifyContent = 'center';
-    customColorLabel.style.width = '18px';
-    customColorLabel.style.height = '18px';
-    customColorLabel.style.borderRadius = '50%';
-    customColorLabel.style.border = '1px solid rgba(0,0,0,0.2)';
-    customColorLabel.style.background = 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)';
+    customColorLabel.classList.add(CSS_CLASSES.customLabel);
 
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
-    colorInput.style.visibility = 'hidden';
-    colorInput.style.width = '0';
-    colorInput.style.height = '0';
-    colorInput.style.position = 'absolute';
+    colorInput.classList.add(CSS_CLASSES.colorInput);
 
     // Если текущий цвет не из пресетов и не прозрачный
     if (currentColor !== 'transparent' && !PRESET_COLORS.includes(currentColor)) {
       colorInput.value = currentColor;
-      customColorLabel.style.borderColor = '#333';
-      customColorLabel.style.transform = 'scale(1.1)';
+      customColorLabel.classList.add(CSS_CLASSES.colorBtnActive);
     }
 
     colorInput.addEventListener('input', (e) => {
@@ -242,13 +318,7 @@
     if (!marker) {
       marker = document.createElement('div');
       marker.setAttribute(markerAttr, 'true');
-      marker.style.position = 'absolute';
-      marker.style.left = '-7px';
-      marker.style.top = '6%';
-      marker.style.bottom = '6%';
-      marker.style.width = '8px';
-      marker.style.borderRadius = '24px 0 0 24px';
-      marker.style.pointerEvents = 'none';
+      marker.classList.add(CSS_CLASSES.marker);
 
       // Карточка может быть position: static, поэтому оборачиваем в relative
       const style = window.getComputedStyle(card);
@@ -285,6 +355,7 @@
   }
 
   function setup() {
+    injectStyles();
     const storage = loadStorage();
     const save = saveStorage;
 
