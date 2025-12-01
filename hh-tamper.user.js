@@ -64,6 +64,7 @@
     textarea.style.fontSize = '12px';
     textarea.style.lineHeight = '1.4';
     textarea.style.width = '100%';
+    textarea.style.height = '100%';
     textarea.style.boxSizing = 'border-box';
 
     if (state && typeof state.comment === 'string') {
@@ -227,12 +228,8 @@
     panel.appendChild(textarea);
 
     // Вставляем в конец карточки, но до внешней рамки
-    const borderEl = card.querySelector('.magritte-border-element___x7sZL_8-2-1:last-of-type');
-    if (borderEl && borderEl.parentElement === card) {
-      card.insertBefore(panel, borderEl);
-    } else {
-      card.appendChild(panel);
-    }
+    // Вставляем в конец карточки (не привязываемся к классам границ, используем контейнер с data-qa-id)
+    card.appendChild(panel);
 
     return panel;
   }
