@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         CRUSOR HH Resume Notes & Colors
+// @name         HH Resume Notes & Colors
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Добавляет заметки и цветовую пометку к каждому резюме на странице «Мои резюме» (hh.ru). Данные хранятся в localStorage.
@@ -86,7 +86,7 @@
     const PRESET_COLORS = [
       '#ffd966', // Yellow
       '#8dc6ff', // Blue
-      '#84e1bc', // Green
+      '#28dd9a', // Green
       '#ff2b00', // Red
       '#e1bfff', // Purple
     ];
@@ -243,10 +243,10 @@
       marker = document.createElement('div');
       marker.setAttribute(markerAttr, 'true');
       marker.style.position = 'absolute';
-      marker.style.left = '0';
-      marker.style.top = '0';
-      marker.style.bottom = '0';
-      marker.style.width = '4px';
+      marker.style.left = '-7px';
+      marker.style.top = '6%';
+      marker.style.bottom = '6%';
+      marker.style.width = '8px';
       marker.style.borderRadius = '24px 0 0 24px';
       marker.style.pointerEvents = 'none';
 
