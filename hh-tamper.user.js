@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         HH Resume Notes & Colors
+// @name         hh.ru Resume Notes & Colors
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Добавляет заметки и цветовую пометку к каждому резюме на странице «Мои резюме» (hh.ru). Данные хранятся в localStorage.
-// @author       you
+// @author       ai-leonid
 // @match        *://*.hh.ru/applicant/resumes
 // @icon         https://hh.ru/favicon.ico
 // @grant        none
