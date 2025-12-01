@@ -1,15 +1,18 @@
 // ==UserScript==
 // @name         hh.ru Resume Notes & Colors
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1.0
 // @description  Добавляет заметки и цветовую пометку к каждому резюме на странице «Мои резюме» (hh.ru). Данные хранятся в localStorage.
 // @author       ai-leonid
 // @match        *://*.hh.ru/applicant/resumes
+// @match        *://hh.ru/applicant/resumes
+// @match        *://*.hh.ru/resume/*
+// @match        *://hh.ru/resume/*
 // @icon         https://hh.ru/favicon.ico
 // @grant        none
 // ==/UserScript==
 
-(function () {
+(function() {
   'use strict';
 
   const STORAGE_KEY = 'hh-resume-notes-and-colors';
@@ -17,6 +20,7 @@
   // --- STYLES CONFIGURATION ---
   const CSS_CLASSES = {
     panel: 'hh-resume-note-panel',
+    panelPageResume: 'hh-resume-note-panel-page-resume',
     textarea: 'hh-resume-note-textarea',
     header: 'hh-resume-note-header',
     colorWrapper: 'hh-resume-note-color-wrapper',
@@ -40,6 +44,13 @@
       gap: 2px;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 12px;
+    }
+    
+    .${CSS_CLASSES.panelPageResume} {
+      margin-top: 0!important;
+      margin-left: 0!important;
+      margin-bottom: 0!important;
+      padding-bottom: 0!important;
     }
     
     .${CSS_CLASSES.textarea} {
@@ -152,7 +163,8 @@
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
+    }
+    catch (e) {
       console.error('[HH Resume Notes] Failed to parse storage', e);
       return {};
     }
@@ -161,22 +173,30 @@
   function saveStorage(data) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
+    }
+    catch (e) {
       console.error('[HH Resume Notes] Failed to save storage', e);
     }
   }
 
-  function createPanel(resumeId, card, state, onChange) {
+  function createPanel({ resumeId, card, state, extraPanelClasses, onChange }) {
     const existing = card.querySelector(`[data-hh-notes-panel]`);
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
 
     const panel = document.createElement('div');
     panel.setAttribute('data-hh-notes-panel', 'true');
     panel.classList.add(CSS_CLASSES.panel);
 
+    if (extraPanelClasses) {
+      panel.classList.add(extraPanelClasses);
+    }
+
     // Сначала создаем textarea, так как она нужна в updateColor
     const textarea = document.createElement('textarea');
     textarea.classList.add(CSS_CLASSES.textarea);
+
     textarea.rows = 2;
 
     if (state && typeof state.comment === 'string') {
@@ -212,11 +232,12 @@
           child.classList.remove(CSS_CLASSES.colorBtnActive);
 
           if (child === customLabel) {
-             if (newColor !== 'transparent' && !PRESET_COLORS.includes(newColor)) {
-                child.classList.add(CSS_CLASSES.colorBtnActive);
-             }
-          } else if (child.getAttribute('data-color') === newColor) {
-             child.classList.add(CSS_CLASSES.colorBtnActive);
+            if (newColor !== 'transparent' && !PRESET_COLORS.includes(newColor)) {
+              child.classList.add(CSS_CLASSES.colorBtnActive);
+            }
+          }
+          else if (child.getAttribute('data-color') === newColor) {
+            child.classList.add(CSS_CLASSES.colorBtnActive);
           }
         });
       }
@@ -237,13 +258,14 @@
       if (color === 'transparent') {
         btn.classList.add(CSS_CLASSES.colorBtnTransparent);
         btn.title = 'Сбросить цвет';
-      } else {
+      }
+      else {
         btn.style.backgroundColor = color;
       }
 
       // Выделение активного
       if (color === currentColor) {
-         btn.classList.add(CSS_CLASSES.colorBtnActive);
+        btn.classList.add(CSS_CLASSES.colorBtnActive);
       }
 
       btn.addEventListener('click', () => {
@@ -282,7 +304,7 @@
     }
 
     colorInput.addEventListener('input', (e) => {
-       updateColor(e.target.value);
+      updateColor(e.target.value);
     });
 
     customColorLabel.appendChild(colorInput);
@@ -356,18 +378,66 @@
     const state = storage[resumeId] || {};
 
     // Создаем панель и навешиваем обработчики
-    createPanel(resumeId, card, state, (updated) => {
-      storage[updated.id] = {
-        comment: updated.comment || '',
-        color: updated.color || 'transparent',
-      };
-      save(storage);
-      applyColorToCard(card, storage[updated.id].color);
+    createPanel({
+      resumeId,
+      card,
+      state,
+      onChange: (updated) => {
+        storage[updated.id] = {
+          comment: updated.comment || '',
+          color: updated.color || 'transparent',
+        };
+        save(storage);
+        applyColorToCard(card, storage[updated.id].color);
+      },
     });
 
     // Применяем цвет при инициализации
     const colorToApply = state.color || 'transparent';
     applyColorToCard(card, colorToApply);
+  }
+
+  function initSingleResumePage(storage, save) {
+    const match = window.location.pathname.match(/^\/resume\/([a-f0-9]+)/);
+
+    if (!match) {
+      return;
+    }
+
+    const resumeId = match[1];
+    const titleContainer = document.querySelector('[data-qa="title-container"]');
+    if (!titleContainer) {
+      return;
+    }
+
+    const card = titleContainer.closest('div[class*="magritte-card"]');
+    if (!card) {
+      return;
+    }
+
+    if (card.querySelector('[data-hh-notes-panel]')) {
+      return;
+    }
+
+    const state = storage[resumeId] || {};
+
+    const panel = createPanel({
+      resumeId,
+      card,
+      state,
+      extraPanelClasses: CSS_CLASSES.panelPageResume,
+      onChange: (updated) => {
+        storage[updated.id] = {
+          comment: updated.comment || '',
+          color: updated.color || 'transparent',
+        };
+        save(storage);
+        applyColorToCard(card, storage[updated.id].color);
+      },
+    });
+
+    card.insertBefore(panel, card.firstChild);
+    applyColorToCard(card, state.color || 'transparent');
   }
 
   function setup() {
@@ -379,9 +449,14 @@
     const cards = document.querySelectorAll(selector);
     cards.forEach((card) => initForCard(card, storage, save));
 
+    initSingleResumePage(storage, save);
+
     // На случай динамической подгрузки резюме
     const observer = new MutationObserver((mutations) => {
       let foundNew = false;
+
+      initSingleResumePage(storage, save);
+
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof HTMLElement)) return;
@@ -389,7 +464,8 @@
           if (node.matches && node.matches(selector)) {
             initForCard(node, storage, save);
             foundNew = true;
-          } else {
+          }
+          else {
             const innerCards = node.querySelectorAll
               ? node.querySelectorAll(selector)
               : [];
@@ -415,7 +491,8 @@
   function waitForPageReady() {
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setup();
-    } else {
+    }
+    else {
       document.addEventListener('DOMContentLoaded', setup);
     }
   }
