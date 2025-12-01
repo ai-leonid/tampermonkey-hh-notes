@@ -332,10 +332,26 @@
   }
 
   function initForCard(card, storage, save) {
-    if (!card) return;
+    if (!card) {
+      return;
+    }
 
-    const resumeId = card.getAttribute('data-qa-id');
-    if (!resumeId) return;
+    // Ищем ссылку с хешем внутри карточки
+    const link = card.querySelector('a[data-qa^="resume-card-link-"]');
+    if (!link) {
+      return;
+    }
+
+    const qaAttr = link.getAttribute('data-qa');
+    if (!qaAttr) {
+      return;
+    }
+
+    // Извлекаем хеш из атрибута data-qa="resume-card-link-{hash}"
+    const resumeId = qaAttr.replace('resume-card-link-', '');
+    if (!resumeId) {
+      return;
+    }
 
     const state = storage[resumeId] || {};
 
