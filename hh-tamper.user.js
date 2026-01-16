@@ -1,21 +1,23 @@
 // ==UserScript==
 // @name         hh.ru Resume Notes & Colors
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.1.1
 // @description  Добавляет заметки и цветовую пометку к каждому резюме на странице «Мои резюме» (hh.ru). Данные хранятся в localStorage.
 // @author       ai-leonid
-// @match        *://*.hh.ru/applicant/resumes
-// @match        *://hh.ru/applicant/resumes
+// @match        *://*.hh.ru/applicant/resumes*
+// @match        *://hh.ru/applicant/resumes*
 // @match        *://*.hh.ru/resume/*
 // @match        *://hh.ru/resume/*
 // @icon         https://hh.ru/favicon.ico
 // @grant        none
+// @run-at       document-end
 // ==/UserScript==
 
 (function() {
   'use strict';
 
   const STORAGE_KEY = 'hh-resume-notes-and-colors';
+  let isSetupDone = false;
 
   // --- STYLES CONFIGURATION ---
   const CSS_CLASSES = {
@@ -441,6 +443,15 @@
   }
 
   function setup() {
+    if (isSetupDone) {
+      return;
+    }
+    const body = document.body;
+    if (!body) {
+      return;
+    }
+    isSetupDone = true;
+
     injectStyles();
     const storage = loadStorage();
     const save = saveStorage;
@@ -482,20 +493,20 @@
       }
     });
 
-    observer.observe(document.body, {
+    observer.observe(body, {
       childList: true,
       subtree: true,
     });
   }
 
-  function waitForPageReady() {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  function waitForFullPageLoad() {
+    if (document.readyState === 'complete') {
       setup();
+      return;
     }
-    else {
-      document.addEventListener('DOMContentLoaded', setup);
-    }
+
+    window.addEventListener('load', setup, { once: true });
   }
 
-  waitForPageReady();
+  waitForFullPageLoad();
 })();
